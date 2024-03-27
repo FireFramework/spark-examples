@@ -7,11 +7,11 @@
     <groupId>org.example</groupId>
     <artifactId>spark-exmaples</artifactId>
     <inceptionYear>2008</inceptionYear>
-    <version>2.3.4</version>
+    <version>2.4.4</version>
 
     <properties>
         <maven.scope>provided</maven.scope>
-        <fire.version>2.3.4</fire.version>
+        <fire.version>2.4.4</fire.version>
         <hadoop.version>2.6.0</hadoop.version>
         <hive.version>1.2.1</hive.version>
         <hbase.version>1.2.0</hbase.version>
@@ -296,49 +296,11 @@
             <version>${netty.version}</version>
             <scope>${maven.scope}</scope>
         </dependency>
+
+        <!-- fire框架依赖，需要放在最顶层 -->
         <dependency>
             <groupId>com.zto.fire</groupId>
-            <artifactId>fire-common_${scala.binary.version}</artifactId>
-            <version>${fire.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zto.fire</groupId>
-            <artifactId>fire-core_${scala.binary.version}</artifactId>
-            <version>${fire.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zto.fire</groupId>
-            <artifactId>fire-spark_${spark.reference}</artifactId>
-            <version>${fire.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zto.fire</groupId>
-            <artifactId>fire-enhance-spark_${spark.reference}</artifactId>
-            <version>${fire.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zto.fire</groupId>
-            <artifactId>fire-connector-spark-rocketmq_${spark.reference}</artifactId>
-            <version>${fire.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zto.fire</groupId>
-            <artifactId>fire-connector-spark-hbase_${spark.reference}</artifactId>
-            <version>${fire.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zto.fire</groupId>
-            <artifactId>fire-connector-hbase_${scala.binary.version}</artifactId>
-            <version>${fire.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zto.fire</groupId>
-            <artifactId>fire-connector-jdbc_${scala.binary.version}</artifactId>
-            <version>${fire.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zto.fire</groupId>
-            <artifactId>fire-enhance-arthas_${scala.binary.version}</artifactId>
+            <artifactId>fire-bundle-spark_${spark.reference}</artifactId>
             <version>${fire.version}</version>
         </dependency>
 

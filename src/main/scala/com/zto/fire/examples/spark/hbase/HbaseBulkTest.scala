@@ -18,7 +18,7 @@
 package com.zto.fire.examples.spark.hbase
 
 import com.zto.fire._
-import com.zto.fire.core.anno.connector.{HBase, HBase2}
+import com.zto.fire.core.anno.connector.{HBase, HBase2, Hive}
 import com.zto.fire.examples.bean.Student
 import com.zto.fire.hbase.HBaseConnector
 import com.zto.fire.spark.SparkCore
@@ -32,29 +32,31 @@ import org.apache.spark.sql.{Encoders, Row}
   * @author ChengLong 2019-5-18 09:20:52
   *  @contact Fire框架技术交流群（钉钉）：35373471
   */
-@HBase("test")
-@HBase2(cluster = "test", scanPartitions = 3, storageLevel = "DISK_ONLY")
+// 以上注解支持别名或url两种方式如：@Hive(thrift://hive:9083)，别名映射需配置到cluster.properties中
+@Hive("fat")
+@HBase("fat")
+@HBase2(cluster = "fat", scanPartitions = 3, storageLevel = "DISK_ONLY")
 // 以上注解支持别名或url两种方式如：@Hive(thrift://hive:9083)，别名映射需配置到cluster.properties中
 object HBaseBulkTest extends SparkCore {
   private val tableName3 = "fire_test_3"
   private val tableName5 = "fire_test_5"
 
   /**
-    * 使用id作为rowKey
-    */
+   * 使用id作为rowKey
+   */
   val buildStudentRowKey = (row: Row) => {
     row.getAs("id").toString
   }
 
   /**
-    * 使用bulk的方式将rdd写入到hbase
-    */
+   * 使用bulk的方式将rdd写入到hbase
+   */
   def testHbaseBulkPutRDD: Unit = {
     // 方式一：将rdd的数据写入到hbase中，rdd类型必须为HBaseBaseBean的子类
     val rdd = this.fire.createRDD(Student.newStudentList(), 2)
     // rdd.hbaseBulkPutRDD(this.tableName2)
     // 方式二：使用this.fire.hbaseBulkPut将rdd中的数据写入到hbase
-    this.fire.hbaseBulkPutRDD(this.tableName5, rdd)
+    this.fire.hbaseBulkPutRDD[Student](this.tableName5, rdd)
 
     // 第二个参数指定false表示不插入为null的字段到hbase中
     // rdd.hbaseBulkPutRDD(this.tableName2, insertEmpty = false)
@@ -63,53 +65,53 @@ object HBaseBulkTest extends SparkCore {
   }
 
   /**
-    * 使用bulk的方式将DataFrame写入到hbase
-    */
+   * 使用bulk的方式将DataFrame写入到hbase
+   */
   def testHbaseBulkPutDF: Unit = {
     // 方式一：将DataFrame的数据写入到hbase中
     val rdd = this.fire.createRDD(Student.newStudentList(), 2)
     val studentDF = this.fire.createDataFrame(rdd, classOf[Student])
     // insertEmpty=false表示为空的字段不插入
-    studentDF.hbaseBulkPutDF(this.tableName3, classOf[Student], keyNum = 2)
+    studentDF.hbaseBulkPutDF[Student](this.tableName3, keyNum = 2)
     // 方式二：
     // this.fire.hbaseBulkPutDF(this.tableName2, studentDF, classOf[Student])
   }
 
   /**
-    * 使用bulk的方式将Dataset写入到hbase
-    */
+   * 使用bulk的方式将Dataset写入到hbase
+   */
   def testHbaseBulkPutDS: Unit = {
     // 方式一：将DataFrame的数据写入到hbase中
     val rdd = this.fire.createRDD(Student.newStudentList(), 2)
     val studentDataset = this.fire.createDataset(rdd)(Encoders.bean(classOf[Student]))
     // multiVersion=true表示以多版本形式插入
-    studentDataset.hbaseBulkPutDS(this.tableName5)
+    studentDataset.hbaseBulkPutDS[Student](this.tableName5)
     // 方式二：
     // this.fire.hbaseBulkPutDS(this.tableName3, studentDataset)
   }
 
   /**
-    * 使用bulk方式根据rowKey集合获取数据，并将结果集以RDD形式返回
-    */
+   * 使用bulk方式根据rowKey集合获取数据，并将结果集以RDD形式返回
+   */
   def testHBaseBulkGetSeq: Unit = {
     println("===========testHBaseBulkGetSeq===========")
     // 方式一：使用rowKey集合读取hbase中的数据
     val seq = Seq(1.toString, 2.toString, 3.toString, 5.toString, 6.toString)
-    val studentRDD = this.fire.hbaseBulkGetSeq(this.tableName5, seq, classOf[Student])
+    val studentRDD = this.fire.hbaseBulkGetSeq[Student](this.tableName5, seq)
     studentRDD.foreach(println)
     // 方式二：使用this.fire.hbaseBulkGetRDD
-    /*val studentRDD2 = this.fire.hbaseBulkGetSeq(this.tableName2, seq, classOf[Student])
+    /*val studentRDD2 = this.fire.hbaseBulkGetSeq[Student](this.tableName2, seq)
     studentRDD2.foreach(println)*/
   }
 
   /**
-    * 使用bulk方式根据rowKey获取数据，并将结果集以RDD形式返回
-    */
+   * 使用bulk方式根据rowKey获取数据，并将结果集以RDD形式返回
+   */
   def testHBaseBulkGetRDD: Unit = {
     println("===========testHBaseBulkGetRDD===========")
     // 方式一：使用rowKey读取hbase中的数据，rowKeyRdd类型为String
     val rowKeyRdd = this.fire.createRDD(Seq(1.toString, 2.toString, 3.toString, 5.toString, 6.toString), 2)
-    val studentRDD = rowKeyRdd.hbaseBulkGetRDD(this.tableName3, classOf[Student], keyNum = 2)
+    val studentRDD = rowKeyRdd.hbaseBulkGetRDD[Student](this.tableName3, keyNum = 2)
     studentRDD.foreach(println)
     // 方式二：使用this.fire.hbaseBulkGetRDD
     // val studentRDD2 = this.fire.hbaseBulkGetRDD(this.tableName2, rowKeyRdd, classOf[Student])
@@ -117,27 +119,27 @@ object HBaseBulkTest extends SparkCore {
   }
 
   /**
-    * 使用bulk方式根据rowKey获取数据，并将结果集以DataFrame形式返回
-    */
+   * 使用bulk方式根据rowKey获取数据，并将结果集以DataFrame形式返回
+   */
   def testHBaseBulkGetDF: Unit = {
     println("===========testHBaseBulkGetDF===========")
     // 方式一：使用rowKey读取hbase中的数据，rowKeyRdd类型为String
     val rowKeyRdd = this.fire.createRDD(Seq(1.toString, 2.toString, 3.toString, 5.toString, 6.toString), 2)
-    val studentDF = rowKeyRdd.hbaseBulkGetDF(this.tableName5, classOf[Student])
+    val studentDF = rowKeyRdd.hbaseBulkGetDF[Student](this.tableName5)
     studentDF.show(100, false)
     // 方式二：使用this.fire.hbaseBulkGetDF
-    val studentDF2 = this.fire.hbaseBulkGetDF(this.tableName5, rowKeyRdd, classOf[Student])
+    val studentDF2 = this.fire.hbaseBulkGetDF[Student](this.tableName5, rowKeyRdd)
     studentDF2.show(100, false)
   }
 
   /**
-    * 使用bulk方式根据rowKey获取数据，并将结果集以Dataset形式返回
-    */
+   * 使用bulk方式根据rowKey获取数据，并将结果集以Dataset形式返回
+   */
   def testHBaseBulkGetDS: Unit = {
     println("===========testHBaseBulkGetDS===========")
     // 方式一：使用rowKey读取hbase中的数据，rowKeyRdd类型为String
     val rowKeyRdd = this.fire.createRDD(Seq(1.toString, 2.toString, 3.toString, 5.toString, 6.toString), 2)
-    val studentDS = rowKeyRdd.hbaseBulkGetDS(this.tableName5, classOf[Student])
+    val studentDS = rowKeyRdd.hbaseBulkGetDS[Student](this.tableName5)
     studentDS.show(100, false)
     // 方式二：使用this.fire.hbaseBulkGetDF
     // val studentDS2 = this.fire.hbaseBulkGetDS(this.tableName2, rowKeyRdd, classOf[Student])
@@ -145,38 +147,38 @@ object HBaseBulkTest extends SparkCore {
   }
 
   /**
-    * 使用bulk方式进行scan，并将结果集映射为RDD
-    */
+   * 使用bulk方式进行scan，并将结果集映射为RDD
+   */
   def testHbaseBulkScanRDD: Unit = {
     println("===========testHbaseBulkScanRDD===========")
     // scan操作，指定rowKey的起止或直接传入自己构建的scan对象实例，返回类型为RDD[Student]
-    val scanRDD = this.fire.hbaseBulkScanRDD2(this.tableName5, classOf[Student], "1", "6")
+    val scanRDD = this.fire.hbaseBulkScanRDD2[Student](this.tableName5, "1", "6")
     scanRDD.foreach(println)
   }
 
   /**
-    * 使用bulk方式进行scan，并将结果集映射为DataFrame
-    */
+   * 使用bulk方式进行scan，并将结果集映射为DataFrame
+   */
   def testHbaseBulkScanDF: Unit = {
     println("===========testHbaseBulkScanDF===========")
     // scan操作，指定rowKey的起止或直接传入自己构建的scan对象实例，返回类型为DataFrame
-    val scanDF = this.fire.hbaseBulkScanDF2(this.tableName5, classOf[Student], "1", "6")
+    val scanDF = this.fire.hbaseBulkScanDF2[Student](this.tableName5, "1", "6")
     scanDF.show(100, false)
   }
 
   /**
-    * 使用bulk方式进行scan，并将结果集映射为Dataset
-    */
+   * 使用bulk方式进行scan，并将结果集映射为Dataset
+   */
   def testHbaseBulkScanDS: Unit = {
     println("===========testHbaseBulkScanDS===========")
     // scan操作，指定rowKey的起止或直接传入自己构建的scan对象实例，返回类型为Dataset[Student]
-    val scanDS = this.fire.hbaseBulkScanDS(this.tableName5, classOf[Student], HBaseConnector.buildScan("1", "6"))
+    val scanDS = this.fire.hbaseBulkScanDS[Student](this.tableName5, HBaseConnector.buildScan("1", "6"))
     scanDS.show(100, false)
   }
 
   /**
-    * 使用bulk方式批量删除指定的rowKey对应的数据
-    */
+   * 使用bulk方式批量删除指定的rowKey对应的数据
+   */
   def testHBaseBulkDeleteRDD: Unit = {
     // 方式一：使用rowKey读取hbase中的数据，rowKeyRdd类型为String
     val rowKeyRdd = this.fire.createRDD(Seq(1.toString, 2.toString, 5.toString, 6.toString), 2)
@@ -188,8 +190,8 @@ object HBaseBulkTest extends SparkCore {
   }
 
   /**
-    * 使用bulk方式批量删除指定的rowKey对应的数据
-    */
+   * 使用bulk方式批量删除指定的rowKey对应的数据
+   */
   def testHBaseBulkDeleteDS: Unit = {
     // 方式一：使用rowKey读取hbase中的数据，rowKeyRdd类型为String
     val rowKeyRdd = this.fire.createRDD(Seq(1.toString, 2.toString, 5.toString, 6.toString), 2)
@@ -202,9 +204,9 @@ object HBaseBulkTest extends SparkCore {
 
 
   /**
-    * Spark处理过程
-    * 注：此方法会被自动调用
-    */
+   * Spark处理过程
+   * 注：此方法会被自动调用
+   */
   override def process: Unit = {
     this.testHBaseBulkDeleteRDD
     HBaseConnector.truncateTable(this.tableName3, keyNum = 2)
